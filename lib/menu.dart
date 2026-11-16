@@ -127,8 +127,34 @@ class ItemCard extends StatelessWidget {
       borderRadius: BorderRadius.circular(12),
       child: InkWell(
         // Aksi ketika kartu ditekan oleh pengguna.
-        onTap: () {
-          // Menampilkan SnackBar dengan pesan interaktif.
+        onTap: () async {
+          if (item.name == 'Tambah Proyek') {
+            await showDialog<void>(
+              context: context,
+              builder: (BuildContext dialogContext) {
+                return AlertDialog(
+                  title: const Text('Tambah Proyek'),
+                  content: const Text(
+                    'Kamu memilih menu Tambah Proyek. Lanjutkan?',
+                  ),
+                  actions: [
+                    TextButton(
+                      onPressed: () => Navigator.of(dialogContext).pop(),
+                      child: const Text('Batal'),
+                    ),
+                    TextButton(
+                      onPressed: () => Navigator.of(dialogContext).pop(),
+                      child: const Text('Lanjutkan'),
+                    ),
+                  ],
+                );
+              },
+            );
+          }
+
+          if (!context.mounted) return;
+
+          // Menampilkan SnackBar setelah dialog ditutup.
           ScaffoldMessenger.of(context)
             ..hideCurrentSnackBar()
             ..showSnackBar(
