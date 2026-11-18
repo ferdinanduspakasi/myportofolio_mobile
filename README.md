@@ -13,8 +13,9 @@ Aplikasi portofolio pribadi sederhana untuk Android, iOS, dan platform lain yang
 - Halaman utama dengan tiga kartu informasi (`InfoCard`): NPM, Name, dan Class.
 - Tiga kartu aksi (`ItemCard`) dengan ikon dan warna berbeda: **Lihat Proyek** (biru), **Tambah Proyek** (hijau), dan **Logout** (oranye tua).
 - SnackBar "Kamu telah menekan tombol [Nama Tombol]!" setiap kartu aksi ditekan.
-- Fitur ekstra: dialog konfirmasi pada **Tambah Proyek**. Pilihan "Batal" dan "Lanjutkan" menghasilkan SnackBar yang berbeda.
-- Tata letak tahan layar sempit: `InfoCard` memakai `Expanded` dan halaman dibungkus `SingleChildScrollView`.
+- Drawer untuk navigasi ke halaman utama dan formulir proyek.
+- Formulir proyek dengan validasi nama dan deskripsi, pilihan kategori, teknologi, serta tautan; isian ditampilkan dalam dialog dan belum disimpan ke database.
+- Tombol **Tambah Proyek** membuka formulir, dan tombol Back kembali ke halaman sebelumnya.
 
 ## Menjalankan Proyek
 
@@ -37,6 +38,7 @@ flutter test      # seluruh widget test lulus
 
 - **Tutorial 08**: Menyiapkan dasar aplikasi Flutter dan memisahkan bootstrap `main.dart` dari halaman `menu.dart`.
 - **Tugas 7**: Menambahkan informasi profil, tiga kartu aksi dengan warna berbeda, dan SnackBar sesuai aksi.
+- **Tutorial 09**: Menambahkan drawer, formulir proyek dengan validasi dan dialog ringkasan, navigasi, serta merapikan halaman dan widget ke direktori `screens/` dan `widgets/`.
 
 ## Refleksi
 ### Tugas 7
