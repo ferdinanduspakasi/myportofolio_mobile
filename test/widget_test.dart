@@ -156,11 +156,37 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(
-      find.text('URL logo harus menggunakan http atau https.'),
+      find.text('Masukkan URL logo valid dengan http atau https.'),
       findsOneWidget,
     );
     expect(find.byType(AlertDialog), findsNothing);
   });
+
+  testWidgets(
+    'URL logo valid menampilkan pratinjau dan URL kosong menyembunyikannya',
+    (WidgetTester tester) async {
+      await tester.pumpWidget(const MaterialApp(home: EducationFormPage()));
+
+      final Finder logoField = find.widgetWithText(
+        TextFormField,
+        'URL Logo Institusi',
+      );
+      await tester.enterText(logoField, 'https://example.com/logo.png');
+      await tester.pump(const Duration(milliseconds: 400));
+      await tester.pump();
+
+      expect(find.text('Pratinjau logo institusi'), findsOneWidget);
+      expect(
+        find.byKey(const ValueKey('education-logo-preview-image')),
+        findsOneWidget,
+      );
+
+      await tester.enterText(logoField, '');
+      await tester.pump();
+
+      expect(find.text('Pratinjau logo institusi'), findsNothing);
+    },
+  );
 
   testWidgets('form menampilkan ringkasan input valid di dialog', (
     WidgetTester tester,

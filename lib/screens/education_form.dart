@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:material_ui/material_ui.dart';
 import 'package:myportofolio_mobile/widgets/left_drawer.dart';
 
@@ -11,10 +13,12 @@ class EducationFormPage extends StatefulWidget {
 class _EducationFormPageState extends State<EducationFormPage> {
   final _formKey = GlobalKey<FormState>();
   final _endDateController = TextEditingController();
+  Timer? _logoPreviewDebounce;
   String _institutionName = '';
   String _degree = 'bachelor';
   String _fieldOfStudy = '';
   String _logoUrl = '';
+  String _previewLogoUrl = '';
   String _description = '';
   DateTime? _endedAt;
 
@@ -44,6 +48,31 @@ class _EducationFormPageState extends State<EducationFormPage> {
     }
   }
 
+  bool _isValidLogoUrl(String value) {
+    final Uri? uri = Uri.tryParse(value.trim());
+    return uri != null &&
+        (uri.scheme == 'http' || uri.scheme == 'https') &&
+        uri.host.isNotEmpty;
+  }
+
+  void _onLogoUrlChanged(String value) {
+    _logoPreviewDebounce?.cancel();
+    setState(() {
+      _logoUrl = value;
+      _previewLogoUrl = '';
+    });
+
+    final String url = value.trim();
+    if (!_isValidLogoUrl(url)) return;
+
+    _logoPreviewDebounce = Timer(const Duration(milliseconds: 400), () {
+      if (!mounted) return;
+      setState(() {
+        _previewLogoUrl = url;
+      });
+    });
+  }
+
   void _showSummary() {
     if (!_formKey.currentState!.validate()) return;
 
@@ -70,11 +99,13 @@ class _EducationFormPageState extends State<EducationFormPage> {
               onPressed: () {
                 Navigator.pop(dialogContext);
                 _formKey.currentState!.reset();
+                _logoPreviewDebounce?.cancel();
                 setState(() {
                   _institutionName = '';
                   _degree = 'bachelor';
                   _fieldOfStudy = '';
                   _logoUrl = '';
+                  _previewLogoUrl = '';
                   _description = '';
                   _endedAt = null;
                   _endDateController.clear();
@@ -99,6 +130,7 @@ class _EducationFormPageState extends State<EducationFormPage> {
 
   @override
   void dispose() {
+    _logoPreviewDebounce?.cancel();
     _endDateController.dispose();
     super.dispose();
   }
@@ -210,20 +242,65 @@ class _EducationFormPageState extends State<EducationFormPage> {
                     ),
                   ),
                   onChanged: (String value) {
-                    setState(() {
-                      _logoUrl = value;
-                    });
+                    _onLogoUrlChanged(value);
                   },
                   validator: (String? value) {
                     final String url = value?.trim() ?? '';
-                    if (url.isNotEmpty &&
-                        !url.toLowerCase().startsWith(RegExp('https?://'))) {
-                      return 'URL logo harus menggunakan http atau https.';
+                    if (url.isNotEmpty && !_isValidLogoUrl(url)) {
+                      return 'Masukkan URL logo valid dengan http atau https.';
                     }
                     return null;
                   },
                 ),
               ),
+              if (_previewLogoUrl.isNotEmpty)
+                Padding(
+                  padding: const EdgeInsets.all(8.0),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        'Pratinjau logo institusi',
+                        style: TextStyle(fontWeight: FontWeight.bold),
+                      ),
+                      const SizedBox(height: 8.0),
+                      Container(
+                        width: 120,
+                        height: 120,
+                        alignment: Alignment.center,
+                        decoration: BoxDecoration(
+                          border: Border.all(
+                            color: Theme.of(context).colorScheme.outline,
+                          ),
+                          borderRadius: BorderRadius.circular(5.0),
+                        ),
+                        child: Image.network(
+                          _previewLogoUrl,
+                          key: const ValueKey('education-logo-preview-image'),
+                          width: 120,
+                          height: 120,
+                          fit: BoxFit.contain,
+                          loadingBuilder: (context, child, progress) {
+                            if (progress == null) return child;
+                            return const Center(
+                              child: CircularProgressIndicator(),
+                            );
+                          },
+                          errorBuilder: (context, error, stackTrace) {
+                            return const Column(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(Icons.broken_image_outlined),
+                                SizedBox(height: 4.0),
+                                Text('Logo tidak dapat dimuat'),
+                              ],
+                            );
+                          },
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
               Padding(
                 padding: const EdgeInsets.all(8.0),
                 child: TextFormField(
