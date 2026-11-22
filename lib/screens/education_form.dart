@@ -57,11 +57,11 @@ class _EducationFormPageState extends State<EducationFormPage> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text('Institution: ${_institutionName.trim()}'),
-                Text('Degree: ${_degreeLabel}'),
+                Text('Degree: $_degreeLabel'),
                 Text('Field of Study: ${_fieldOfStudy.trim()}'),
                 Text('Logo URL: ${_logoUrl.trim()}'),
                 Text('Description: ${_description.trim()}'),
-                Text('End Date: ${_formattedEndDate}'),
+                Text('End Date: $_formattedEndDate'),
               ],
             ),
           ),
