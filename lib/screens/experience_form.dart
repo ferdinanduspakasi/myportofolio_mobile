@@ -165,7 +165,7 @@ class _ExperienceFormPageState extends State<ExperienceFormPage> {
               label: Text(
                 date == null
                     ? 'Select date'
-                    : MaterialLocalizations.of(context).formatMediumDate(date),
+                    : MaterialLocalizations.of(context).formatCompactDate(date),
               ),
               onPressed: _isSubmitting
                   ? null

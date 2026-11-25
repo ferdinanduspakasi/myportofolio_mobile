@@ -21,12 +21,12 @@ class ExperienceDetailScreen extends StatelessWidget {
           Text(experience.description),
           Text('Category: ${experience.category.label}'),
           Text(
-            'Start Date: ${localizations.formatMediumDate(experience.startedAt)}',
+            'Start Date: ${localizations.formatFullDate(experience.startedAt)}',
           ),
           Text(
             endedAt == null
                 ? 'Ongoing'
-                : 'End Date: ${localizations.formatMediumDate(endedAt)}',
+                : 'End Date: ${localizations.formatFullDate(endedAt)}',
           ),
         ],
       ),
