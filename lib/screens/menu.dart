@@ -1,6 +1,6 @@
-import 'package:material_ui/material_ui.dart';
+import 'package:flutter/material.dart';
 import 'package:myportofolio_mobile/widgets/left_drawer.dart';
-import 'package:myportofolio_mobile/widgets/project_card.dart';
+import 'package:myportofolio_mobile/widgets/info_card.dart';
 
 class MyHomePage extends StatelessWidget {
   const MyHomePage({super.key});
@@ -9,8 +9,8 @@ class MyHomePage extends StatelessWidget {
   final String nama = "Ferdinandus Pakasi";
   final String kelas = "PBP D";
   final List<ItemHomepage> items = const [
-    ItemHomepage("Lihat Proyek", Icons.folder, Colors.blue),
-    ItemHomepage("Tambah Proyek", Icons.add_circle, Colors.green),
+    ItemHomepage("Lihat Pengalaman", Icons.folder, Colors.blue),
+    ItemHomepage("Tambah Pengalaman", Icons.add_circle, Colors.green),
     ItemHomepage("Tambah Pendidikan", Icons.school, Colors.purple),
     ItemHomepage("Logout", Icons.logout, Colors.deepOrange),
   ];

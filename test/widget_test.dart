@@ -1,22 +1,30 @@
-// This is a basic Flutter widget test.
-//
-// To perform an interaction with a widget in your test, use the WidgetTester
-// utility in the flutter_test package. For example, you can send tap and scroll
-// gestures. You can also use WidgetTester to find child widgets in the widget
-// tree, read text, and verify that the values of widget properties are correct.
+import 'dart:convert';
 
-import 'package:material_ui/material_ui.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:http/http.dart' as http;
+import 'package:http/testing.dart';
 
 import 'package:myportofolio_mobile/main.dart';
 import 'package:myportofolio_mobile/screens/education_form.dart';
+import 'package:myportofolio_mobile/screens/login_screen.dart';
 import 'package:myportofolio_mobile/screens/menu.dart';
+import 'package:myportofolio_mobile/services/api_client.dart';
+import 'package:myportofolio_mobile/services/auth_state.dart';
+import 'package:provider/provider.dart';
+
+Widget educationForm() {
+  return ChangeNotifierProvider(
+    create: (context) => AuthState(ApiClient()),
+    child: const MaterialApp(home: EducationFormPage()),
+  );
+}
 
 void main() {
   testWidgets('menampilkan 3 InfoCard dengan identitas pemilik', (
     WidgetTester tester,
   ) async {
-    await tester.pumpWidget(const MyApp());
+    await tester.pumpWidget(MyApp(apiClient: ApiClient()));
 
     expect(find.text('NPM'), findsOneWidget);
     expect(find.text('2506602643'), findsOneWidget);
@@ -29,10 +37,10 @@ void main() {
   testWidgets('menampilkan kartu aksi dengan warna yang berbeda', (
     WidgetTester tester,
   ) async {
-    await tester.pumpWidget(const MyApp());
+    await tester.pumpWidget(MyApp(apiClient: ApiClient()));
 
-    expect(find.text('Lihat Proyek'), findsOneWidget);
-    expect(find.text('Tambah Proyek'), findsOneWidget);
+    expect(find.text('Lihat Pengalaman'), findsOneWidget);
+    expect(find.text('Tambah Pengalaman'), findsOneWidget);
     expect(find.text('Tambah Pendidikan'), findsOneWidget);
     expect(find.text('Logout'), findsOneWidget);
 
@@ -49,26 +57,122 @@ void main() {
     tester.view.devicePixelRatio = 1.0;
     addTearDown(tester.view.reset);
 
-    await tester.pumpWidget(const MyApp());
+    await tester.pumpWidget(MyApp(apiClient: ApiClient()));
 
     expect(tester.takeException(), isNull);
   });
 
-  testWidgets('menekan Logout memunculkan SnackBar sesuai nama tombol', (
+  testWidgets('daftar dan detail Experience dapat dibuka tanpa login', (
     WidgetTester tester,
   ) async {
-    await tester.pumpWidget(const MyApp());
+    final client = MockClient((request) async {
+      expect(request.method, 'GET');
+      expect(request.url.path, '/api/v1/experiences/');
+      expect(request.headers['authorization'], isNull);
+      return http.Response(
+        '[{"title":"Magang","description":"Membuat aplikasi",'
+        '"category":"internship","started_at":"2025-01-01","ended_at":null}]',
+        200,
+      );
+    });
+    await tester.pumpWidget(MyApp(apiClient: ApiClient(client: client)));
+
+    await tester.tap(find.text('Lihat Pengalaman'));
+    await tester.pumpAndSettle();
+    expect(find.text('Internship\nMembuat aplikasi'), findsOneWidget);
+    await tester.tap(find.text('Magang'));
+    await tester.pumpAndSettle();
+    expect(find.text('Category: Internship'), findsOneWidget);
+    expect(find.text('Ongoing'), findsOneWidget);
+  });
+
+  testWidgets('login membuka form, POST Experience berhasil, dan logout', (
+    WidgetTester tester,
+  ) async {
+    final client = MockClient((request) async {
+      if (request.url.path == '/api/v1/auth/token/') {
+        return http.Response('{"token":"test-token"}', 200);
+      }
+      if (request.url.path == '/api/v1/experiences/') {
+        expect(request.method, 'POST');
+        expect(request.headers['authorization'], 'Token test-token');
+        final payload = jsonDecode(request.body) as Map<String, dynamic>;
+        expect(
+          payload.keys,
+          unorderedEquals([
+            'title',
+            'description',
+            'category',
+            'started_at',
+            'ended_at',
+            'thumbnail',
+          ]),
+        );
+        expect(payload['title'], 'Pengalaman baru');
+        expect(payload['description'], 'Membuat aplikasi');
+        expect(payload['category'], 'full-time');
+        expect(payload['started_at'], matches(RegExp(r'^\d{4}-\d{2}-\d{2}$')));
+        expect(payload['ended_at'], isNull);
+        expect(payload['thumbnail'], isNull);
+        return http.Response(jsonEncode(payload), 201);
+      }
+      expect(request.url.path, '/api/v1/auth/logout/');
+      expect(request.headers['authorization'], 'Token test-token');
+      return http.Response('', 204);
+    });
+    await tester.pumpWidget(MyApp(apiClient: ApiClient(client: client)));
+
+    await tester.tap(find.text('Tambah Pengalaman'));
+    await tester.pumpAndSettle();
+    expect(find.byType(LoginScreen), findsOneWidget);
+    await tester.enterText(
+      find.widgetWithText(TextFormField, 'Username'),
+      'admin',
+    );
+    await tester.enterText(
+      find.widgetWithText(TextFormField, 'Password'),
+      'password',
+    );
+    await tester.tap(find.widgetWithText(ElevatedButton, 'Login'));
+    await tester.pumpAndSettle();
+    expect(find.text('Add Experience Form'), findsOneWidget);
+
+    await tester.enterText(
+      find.widgetWithText(TextFormField, 'Title'),
+      'Pengalaman baru',
+    );
+    await tester.enterText(
+      find.widgetWithText(TextFormField, 'Description'),
+      'Membuat aplikasi',
+    );
+    final startDate = find.text('Select date').first;
+    await tester.ensureVisible(startDate);
+    await tester.tap(startDate);
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('OK'));
+    await tester.pumpAndSettle();
+    await tester.ensureVisible(find.text('Save'));
+    await tester.tap(find.text('Save'));
+    await tester.pumpAndSettle();
+    expect(find.text('Pengalaman berhasil ditambahkan!'), findsOneWidget);
+    await tester.tap(find.text('OK'));
+    await tester.pumpAndSettle();
+
+    await tester.binding.handlePopRoute();
+    await tester.pumpAndSettle();
 
     await tester.tap(find.text('Logout'));
     await tester.pumpAndSettle();
 
-    expect(find.text('Kamu telah menekan tombol Logout!'), findsOneWidget);
+    expect(find.text('Logout berhasil.'), findsOneWidget);
+    final homeContext = tester.element(find.byType(MyHomePage));
+    expect(homeContext.read<AuthState>().isLoggedIn, isFalse);
   });
 
   testWidgets(
     'kartu Tambah Pendidikan membuka formulir dan tombol kembali pulang',
     (WidgetTester tester) async {
-      await tester.pumpWidget(const MyApp());
+      await tester.pumpWidget(MyApp(apiClient: ApiClient()));
 
       await tester.tap(find.text('Tambah Pendidikan'));
       await tester.pumpAndSettle();
@@ -88,11 +192,11 @@ void main() {
   testWidgets(
     'drawer membuka form Education dan Home kembali ke halaman utama',
     (WidgetTester tester) async {
-      await tester.pumpWidget(const MyApp());
+      await tester.pumpWidget(MyApp(apiClient: ApiClient()));
 
       await tester.tap(find.byTooltip('Open navigation menu'));
       await tester.pumpAndSettle();
-      expect(find.text('Add Project'), findsOneWidget);
+      expect(find.text('Add Experience'), findsOneWidget);
       await tester.tap(find.text('Add Education'));
       await tester.pumpAndSettle();
 
@@ -114,7 +218,7 @@ void main() {
   testWidgets(
     'form menolak nama institusi dan bidang studi kosong atau spasi',
     (WidgetTester tester) async {
-      await tester.pumpWidget(const MaterialApp(home: EducationFormPage()));
+      await tester.pumpWidget(educationForm());
 
       await tester.enterText(
         find.widgetWithText(TextFormField, 'Nama Institusi'),
@@ -137,7 +241,7 @@ void main() {
   testWidgets('form menolak URL logo selain http dan https', (
     WidgetTester tester,
   ) async {
-    await tester.pumpWidget(const MaterialApp(home: EducationFormPage()));
+    await tester.pumpWidget(educationForm());
 
     await tester.enterText(
       find.widgetWithText(TextFormField, 'Nama Institusi'),
@@ -165,7 +269,7 @@ void main() {
   testWidgets(
     'URL logo valid menampilkan pratinjau dan URL kosong menyembunyikannya',
     (WidgetTester tester) async {
-      await tester.pumpWidget(const MaterialApp(home: EducationFormPage()));
+      await tester.pumpWidget(educationForm());
 
       final Finder logoField = find.widgetWithText(
         TextFormField,
@@ -191,7 +295,7 @@ void main() {
   testWidgets('form menampilkan ringkasan input valid di dialog', (
     WidgetTester tester,
   ) async {
-    await tester.pumpWidget(const MaterialApp(home: EducationFormPage()));
+    await tester.pumpWidget(educationForm());
 
     await tester.enterText(
       find.widgetWithText(TextFormField, 'Nama Institusi'),
@@ -231,7 +335,7 @@ void main() {
     addTearDown(tester.view.reset);
     addTearDown(tester.view.resetViewInsets);
 
-    await tester.pumpWidget(const MaterialApp(home: EducationFormPage()));
+    await tester.pumpWidget(educationForm());
     final Finder institutionField = find.widgetWithText(
       TextFormField,
       'Nama Institusi',
